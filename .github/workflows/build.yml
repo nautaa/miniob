@@ -78,11 +78,12 @@ jobs:
 
     steps:
     - name: Checkout repository and submodules
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
         
     - name: Build
       shell: bash
       run: |
         yum install -y git make glibc-devel glibc-headers binutils m4
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         bash build.sh init
         bash build.sh debug --make -j4
