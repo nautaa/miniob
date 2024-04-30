@@ -83,5 +83,6 @@ jobs:
     - name: Build
       shell: bash
       run: |
+        yum install -y git make glibc-devel glibc-headers binutils m4
         bash build.sh init
         bash build.sh debug --make -j4
