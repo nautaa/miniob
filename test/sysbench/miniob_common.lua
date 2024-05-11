@@ -32,7 +32,7 @@ end
 -- Command line options
 sysbench.cmdline.options = {
    table_size =
-      {"Number of rows per table", 10000},
+      {"Number of rows per table", 100},
    range_size =
       {"Range size for range SELECT queries", 100},
    tables =
