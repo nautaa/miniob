@@ -1,6 +1,8 @@
 name: test
 
 on:
+  push:
+    branches: ["main", "test_sysbench_2"]
   pull_request:
     branches: [ "main" ]
 
@@ -46,7 +48,7 @@ jobs:
         shell: bash
         run: |
           sudo bash build.sh init
-          bash build.sh release -DCONCURRENCY=ON -DWITH_UNIT_TESTS=OFF
+          bash build.sh release -DENABLE_ASAN=OFF -DCONCURRENCY=ON -DWITH_UNIT_TESTS=OFF
 
       - name: start server
         shell: bash
