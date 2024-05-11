@@ -54,6 +54,7 @@ jobs:
         shell: bash
         run: |
           cd build_release/
+          df -h
           nohup ./bin/observer -T ${{ matrix.thread_model }} -s /tmp/miniob.sock -f ../etc/observer.ini -P mysql -t mvcc -d disk &
           sleep 10 && echo "wake up"
           mysql --version
