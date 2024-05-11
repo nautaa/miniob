@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           sudo bash build.sh init
-          bash build.sh release -DCONCURRENCY=ON -DWITH_UNIT_TESTS=OFF -DENABLE_ASAN=OFF
+          bash build.sh release -DCONCURRENCY=ON -DWITH_UNIT_TESTS=OFF
 
       - name: start server
         shell: bash
