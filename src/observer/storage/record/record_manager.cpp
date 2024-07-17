@@ -417,7 +417,35 @@ bool RecordPageHandler::is_full() const { return page_header_->record_num >= pag
 RC PaxRecordPageHandler::insert_record(const char *data, RID *rid)
 {
   // your code here
-  exit(-1);
+
+  // page 已经达到最大容量时无法插入
+  if (page_header_->record_num == page_header_->record_capacity) {
+    LOG_WARN("Page is full, page_num %d:%d.", disk_buffer_pool_->file_desc(), frame_->page_num());
+    return RC::RECORD_NOMEM;
+  }
+
+  // 从 bitmap 中找到 page 中的空闲位置
+  Bitmap bitmap(bitmap_, page_header_->record_capacity);
+  int    index = bitmap.next_unsetted_bit(0);
+  bitmap.set_bit(index);
+  page_header_->record_num++;
+
+  // 遍历每一列，将每一列的数据插入到 page 内对应列数据位置。（这里与 RowRecordPageHandler::insert_record 实现不同）
+  for (int i = 0; i < page_header_->column_num; i++) {
+    auto field_data = get_field_data(index, i);
+    auto field_len  = get_field_len(i);
+    memcpy(field_data, data, field_len);
+    data = data + field_len;
+  }
+
+  frame_->mark_dirty();
+
+  // 将 record 的插入位置在 rid 中标记。
+  if (rid) {
+    rid->page_num = get_page_num();
+    rid->slot_num = index;
+  }
+  return RC::SUCCESS;
 }
 
 RC PaxRecordPageHandler::delete_record(const RID *rid)
@@ -447,14 +475,62 @@ RC PaxRecordPageHandler::delete_record(const RID *rid)
 RC PaxRecordPageHandler::get_record(const RID &rid, Record &record)
 {
   // your code here
-  exit(-1);
+
+  // 判断是否是无效的 rid
+  if (rid.slot_num >= page_header_->record_capacity) {
+    LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, frame=%s, page_header=%s",
+              rid.slot_num, frame_->to_string().c_str(), page_header_->to_string().c_str());
+    return RC::RECORD_INVALID_RID;
+  }
+  Bitmap bitmap(bitmap_, page_header_->record_capacity);
+  if (!bitmap.get_bit(rid.slot_num)) {
+    LOG_ERROR("Invalid slot_num:%d, slot is empty, page_num %d.", rid.slot_num, frame_->page_num());
+    return RC::RECORD_NOT_EXIST;
+  }
+
+  // 将page 内的列数据写入 record 中。（这里与 RowRecordPageHandler::get_record 实现不同）
+  record.new_record(page_header_->record_real_size);
+  record.set_rid(rid);
+  int record_offset = 0;
+  for (int i = 0; i < page_header_->column_num; i++) {
+    auto field_data = get_field_data(rid.slot_num, i);
+    auto field_len  = get_field_len(i);
+    record.set_field(record_offset, field_len, field_data);
+    record_offset += field_len;
+  }
+  return RC::SUCCESS;
 }
 
-// TODO: specify the column_ids that chunk needed. currenly we get all columns
 RC PaxRecordPageHandler::get_chunk(Chunk &chunk)
 {
   // your code here
-  exit(-1);
+  RC     rc = RC::SUCCESS;
+  Bitmap bitmap(bitmap_, page_header_->record_capacity);
+  int get_rows = 0;
+  // 有效的 slot 范围为 [last_setted, next_unsetted)
+  int last_setted   = bitmap.next_setted_bit(0);
+  int next_unsetted = bitmap.next_unsetted_bit(last_setted);
+  // 将整个 page 的 record 写入 chunk 中。
+  while (OB_SUCC(rc) && get_rows < page_header_->record_num) {
+    if (next_unsetted == -1) {
+      next_unsetted = page_header_->record_capacity;
+    }
+    // 将有效 slot 范围内的列数据写入 chunk 中。
+    get_rows += next_unsetted - last_setted;
+    for (int i = 0; i < chunk.column_num(); i++) {
+      int   col_id     = chunk.column_ids(i);
+      char *field_data = get_field_data(last_setted, col_id);
+      rc               = chunk.column(i).append(field_data, next_unsetted - last_setted);
+      if (rc != RC::SUCCESS) {
+        LOG_ERROR("failed to append data to chunk. rc=%s", strrc(rc));
+        break;
+      }
+    }
+    last_setted   = bitmap.next_setted_bit(next_unsetted);
+    next_unsetted = bitmap.next_unsetted_bit(last_setted);
+  }
+
+  return rc;
 }
 
 char *PaxRecordPageHandler::get_field_data(SlotNum slot_num, int col_id)
