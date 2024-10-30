@@ -8,6 +8,8 @@
 [![HelloGitHub](https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=62efc8a5bbb64a9fbb1ebb7703446f36&claim_uid=AptH8D2YM3rCGL9&theme=small)](https://hellogithub.com/repository/62efc8a5bbb64a9fbb1ebb7703446f36)
 
 </div>
+hello 
+
 
 MiniOB 是 [OceanBase](https://github.com/oceanbase/oceanbase) 团队基于华中科技大学数据库课程原型，联合多所高校重新开发的、专为零基础的同学设计的数据库入门学习项目。MiniOB 的目标是为在校学生、数据库从业者、爱好者或对基础技术感兴趣的人提供一个友好的数据库学习项目，更好地将理论、实践进行结合，提升同学们的工程实战能力。
 
