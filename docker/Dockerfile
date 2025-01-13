@@ -1,8 +1,7 @@
-# how to use
-# use docker build: docker build -t miniob .
-# use docker compose: docker compose up -d --build
-# make sure docker has been installed
-FROM ubuntu:22.04
+FROM linuxserver/code-server:4.19.1
+#FROM codercom/code-server:4.21.1
+
+RUN apt-get  update && apt-get  install -y net-tools vim git curl wget iputils-ping gdb
 
 # ENV LANG=en_US.UTF-8
 # locale
@@ -18,10 +17,16 @@ RUN apt-get update \
 # install openssh
 RUN apt-get install -y openssh-server
 
+# 更新 code-server 所在的容器中的 PATH 环境变量
+ENV PATH="/usr/bin/gcc:${PATH}"
+
+# 更新 code-server 所在的容器中的编译器版本
+RUN gcc --version
+
 # init miniob dependencies
 RUN git clone https://github.com/oceanbase/miniob /tmp/miniob \
     && cd /tmp/miniob \
-    && bash build.sh init \
+    && THIRD_PARTY_INSTALL_PREFIX=/usr/local bash build.sh init \
     && rm -rf /tmp/miniob
 
 RUN mkdir /var/run/sshd
@@ -40,7 +45,3 @@ RUN mkdir -p /root/docker/bin && touch /etc/.firstrun
 COPY bin/* /root/docker/bin/
 
 RUN chmod +x /root/docker/bin/*
-
-WORKDIR /root
-
-ENTRYPOINT /root/docker/bin/starter.sh
