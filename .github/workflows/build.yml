@@ -27,7 +27,7 @@ jobs:
 
     - name: BuildRelease
       shell: bash
-      run: bash build.sh release --make -j4
+      run: bash build.sh release -DCONCURRENCY=ON -DENABLE_COVERAGE=ON --make -j4
 
     - name: BuildDebug
       shell: bash
